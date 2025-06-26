@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GitHub Release Checker
 
-## Getting Started
+GitHub の購読リポジトリから Release 情報を RSS のように表示する Next.js アプリケーション
 
-First, run the development server:
+## 概要
+
+このアプリケーションは、GitHub で Subscribe している リポジトリの Release 通知を有効にしたものから、新しいリリース情報を取得し、RSS リーダーのような形式で表示します。
+
+## 主な機能
+
+- 購読リポジトリのリリース情報を一覧表示
+- カード形式での見やすいUI
+- 日付によるフィルタリング（TODAY、YESTERDAY、LAST_WEEK など）
+- リポジトリの詳細情報をモーダルで表示
+- GitHub リポジトリページへの直接リンク
+
+## 技術スタック
+
+- **Frontend**: Next.js 15 + TypeScript
+- **Styling**: Tailwind CSS
+- **Components**: Shadcn UI
+- **Code Quality**: Biome (linting/formatting)
+- **Git Hooks**: lefthook
+- **Package Manager**: pnpm
+- **Deployment**: Vercel
+
+## 開発環境のセットアップ
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# 依存関係のインストール
+pnpm install
+
+# 環境変数の設定
+cp .env.example .env.local
+# GitHub Personal Access Token を設定
+
+# 開発サーバーの起動
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## GitHub API の設定
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. GitHub の [Personal Access Tokens](https://github.com/settings/tokens) で新しいトークンを作成
+2. 必要な権限: `repo`, `notifications`
+3. `.env.local` に `GITHUB_TOKEN=your_token_here` を設定
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## デプロイ
 
-## Learn More
+Vercel での自動デプロイに対応しています。
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# ビルド確認
+pnpm build
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# 本番環境での起動
+pnpm start
+```

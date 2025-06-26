@@ -1,103 +1,75 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+	const [testResult, setTestResult] = useState<string>("");
+	const [isLoading, setIsLoading] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+	const testGitHubConnection = async () => {
+		setIsLoading(true);
+		try {
+			const response = await fetch("/api/test-github");
+			const data = await response.json();
+
+			if (data.success) {
+				setTestResult(
+					`✅ GitHub API接続成功！\n購読リポジトリ数: ${data.total}\n最初の5件を取得しました。`,
+				);
+			} else {
+				setTestResult(`❌ GitHub API接続失敗: ${data.error}`);
+			}
+		} catch (error) {
+			setTestResult(`❌ エラー: ${error}`);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	return (
+		<div className="min-h-screen p-8 bg-background">
+			<main className="max-w-4xl mx-auto">
+				<header className="mb-8">
+					<h1 className="text-4xl font-bold text-foreground mb-2">
+						GitHub Release Checker
+					</h1>
+					<p className="text-muted-foreground">
+						購読リポジトリのリリース情報をRSSのように表示します
+					</p>
+				</header>
+
+				<div className="space-y-6">
+					<div className="border rounded-lg p-6">
+						<h2 className="text-2xl font-semibold mb-4">
+							GitHub API接続テスト
+						</h2>
+						<button
+							type="button"
+							onClick={testGitHubConnection}
+							disabled={isLoading}
+							className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 disabled:opacity-50"
+						>
+							{isLoading ? "テスト中..." : "GitHub API接続をテスト"}
+						</button>
+
+						{testResult && (
+							<div className="mt-4 p-4 bg-muted rounded-md">
+								<pre className="whitespace-pre-wrap text-sm">{testResult}</pre>
+							</div>
+						)}
+					</div>
+
+					<div className="border rounded-lg p-6">
+						<h2 className="text-2xl font-semibold mb-4">次のステップ</h2>
+						<ul className="list-disc list-inside space-y-2 text-muted-foreground">
+							<li>GitHub APIトークンの設定確認</li>
+							<li>購読リポジトリの取得</li>
+							<li>リリース情報の表示UI作成</li>
+							<li>日付フィルタリング機能の実装</li>
+						</ul>
+					</div>
+				</div>
+			</main>
+		</div>
+	);
 }

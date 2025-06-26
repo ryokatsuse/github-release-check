@@ -20,6 +20,7 @@ export interface Release {
 	html_url: string;
 	published_at: string;
 	repository: Repository;
+	dateCategory?: DateCategory;
 }
 
 export type DateCategory =

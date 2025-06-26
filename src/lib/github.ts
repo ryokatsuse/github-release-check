@@ -28,7 +28,14 @@ export class GitHubClient {
 		return this.request<Repository[]>("/user/subscriptions");
 	}
 
+	async getStarredRepos(): Promise<Repository[]> {
+		return this.request<Repository[]>("/user/starred?per_page=100");
+	}
+
 	async getRepositoryReleases(owner: string, repo: string): Promise<Release[]> {
-		return this.request<Release[]>(`/repos/${owner}/${repo}/releases`);
+		// 最新の10件のリリースのみを取得（パフォーマンス向上）
+		return this.request<Release[]>(
+			`/repos/${owner}/${repo}/releases?per_page=10&page=1`,
+		);
 	}
 }

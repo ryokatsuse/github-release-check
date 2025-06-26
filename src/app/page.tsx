@@ -1,75 +1,161 @@
 "use client";
 
-import { useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { ReleaseCard } from "@/components/release-card";
+import { ReleaseModal } from "@/components/release-modal";
+import { Sidebar } from "@/components/sidebar";
+import { Button } from "@/components/ui/button";
+import type { DateCategory, Release, Repository } from "@/types/github";
 
 export default function Home() {
-	const [testResult, setTestResult] = useState<string>("");
+	const [releases, setReleases] = useState<Release[]>([]);
+	const [repositories, setRepositories] = useState<Repository[]>([]);
+	const [selectedCategory, setSelectedCategory] = useState<
+		DateCategory | "ALL"
+	>("ALL");
+	const [selectedRelease, setSelectedRelease] = useState<Release | null>(null);
+	const [modalOpen, setModalOpen] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState<string>("");
 
-	const testGitHubConnection = async () => {
+	const fetchReleases = useCallback(async () => {
 		setIsLoading(true);
+		setError("");
 		try {
-			const response = await fetch("/api/test-github");
+			const response = await fetch("/api/releases");
 			const data = await response.json();
 
 			if (data.success) {
-				setTestResult(
-					`✅ GitHub API接続成功！\n購読リポジトリ数: ${data.total}\n最初の5件を取得しました。`,
-				);
+				setReleases(data.releases);
+				const uniqueRepos = Array.from(
+					new Map(
+						data.releases.map((release: Release) => [
+							release.repository.id,
+							release.repository,
+						]),
+					).values(),
+				) as Repository[];
+				setRepositories(uniqueRepos);
 			} else {
-				setTestResult(`❌ GitHub API接続失敗: ${data.error}`);
+				setError(data.error);
 			}
-		} catch (error) {
-			setTestResult(`❌ エラー: ${error}`);
+		} catch {
+			setError("リリース情報の取得に失敗しました");
 		} finally {
 			setIsLoading(false);
 		}
+	}, []);
+
+	useEffect(() => {
+		fetchReleases();
+	}, [fetchReleases]);
+
+	const filteredReleases = releases.filter((release) => {
+		if (selectedCategory === "ALL") return true;
+		return release.dateCategory === selectedCategory;
+	});
+
+	const releaseCounts = releases.reduce(
+		(counts, release) => {
+			counts.ALL = (counts.ALL || 0) + 1;
+			if (release.dateCategory) {
+				counts[release.dateCategory] = (counts[release.dateCategory] || 0) + 1;
+			}
+			return counts;
+		},
+		{} as Record<DateCategory | "ALL", number>,
+	);
+
+	const handleReleaseClick = (release: Release) => {
+		setSelectedRelease(release);
+		setModalOpen(true);
 	};
 
-	return (
-		<div className="min-h-screen p-8 bg-background">
-			<main className="max-w-4xl mx-auto">
-				<header className="mb-8">
-					<h1 className="text-4xl font-bold text-foreground mb-2">
-						GitHub Release Checker
-					</h1>
-					<p className="text-muted-foreground">
-						購読リポジトリのリリース情報をRSSのように表示します
-					</p>
-				</header>
-
-				<div className="space-y-6">
-					<div className="border rounded-lg p-6">
-						<h2 className="text-2xl font-semibold mb-4">
-							GitHub API接続テスト
-						</h2>
-						<button
-							type="button"
-							onClick={testGitHubConnection}
-							disabled={isLoading}
-							className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 disabled:opacity-50"
-						>
-							{isLoading ? "テスト中..." : "GitHub API接続をテスト"}
-						</button>
-
-						{testResult && (
-							<div className="mt-4 p-4 bg-muted rounded-md">
-								<pre className="whitespace-pre-wrap text-sm">{testResult}</pre>
-							</div>
-						)}
-					</div>
-
-					<div className="border rounded-lg p-6">
-						<h2 className="text-2xl font-semibold mb-4">次のステップ</h2>
-						<ul className="list-disc list-inside space-y-2 text-muted-foreground">
-							<li>GitHub APIトークンの設定確認</li>
-							<li>購読リポジトリの取得</li>
-							<li>リリース情報の表示UI作成</li>
-							<li>日付フィルタリング機能の実装</li>
-						</ul>
+	if (error) {
+		return (
+			<div className="min-h-screen p-8 bg-background">
+				<div className="max-w-4xl mx-auto">
+					<div className="text-center py-12">
+						<h1 className="text-2xl font-bold mb-4">エラーが発生しました</h1>
+						<p className="text-muted-foreground mb-6">{error}</p>
+						<Button onClick={fetchReleases}>
+							<RefreshCw className="w-4 h-4 mr-2" />
+							再試行
+						</Button>
 					</div>
 				</div>
-			</main>
+			</div>
+		);
+	}
+
+	return (
+		<div className="min-h-screen bg-background">
+			<div className="flex">
+				<Sidebar
+					repositories={repositories}
+					selectedCategory={selectedCategory}
+					onCategoryChange={setSelectedCategory}
+					releaseCounts={releaseCounts}
+				/>
+
+				<main className="flex-1 p-6">
+					<header className="mb-6">
+						<div className="flex items-center justify-between">
+							<div>
+								<h1 className="text-3xl font-bold">GitHub Release Checker</h1>
+								<p className="text-muted-foreground mt-1">
+									{selectedCategory === "ALL"
+										? "すべてのリリース"
+										: `${selectedCategory}のリリース`}{" "}
+									({filteredReleases.length}件)
+								</p>
+							</div>
+							<Button
+								onClick={fetchReleases}
+								disabled={isLoading}
+								variant="outline"
+							>
+								<RefreshCw
+									className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+								/>
+								更新
+							</Button>
+						</div>
+					</header>
+
+					{isLoading ? (
+						<div className="text-center py-12">
+							<RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+							<p className="text-muted-foreground">リリース情報を取得中...</p>
+						</div>
+					) : filteredReleases.length === 0 ? (
+						<div className="text-center py-12">
+							<p className="text-muted-foreground">
+								{selectedCategory === "ALL"
+									? "リリースが見つかりませんでした"
+									: `${selectedCategory}のリリースはありません`}
+							</p>
+						</div>
+					) : (
+						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+							{filteredReleases.map((release) => (
+								<ReleaseCard
+									key={`${release.repository.id}-${release.id}`}
+									release={release}
+									onClick={() => handleReleaseClick(release)}
+								/>
+							))}
+						</div>
+					)}
+				</main>
+			</div>
+
+			<ReleaseModal
+				release={selectedRelease}
+				open={modalOpen}
+				onOpenChange={setModalOpen}
+			/>
 		</div>
 	);
 }
